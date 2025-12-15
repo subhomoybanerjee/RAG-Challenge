@@ -2,6 +2,12 @@
 
 A Retrieval-Augmented Generation system built with Flask backend and React frontend 
 
+<p align="center">
+  <img src="SampleSS/chat.png" width="100%" alt="Project Screenshot">
+  <img src="SampleSS/ingestion.png" width="100%" alt="Project Screenshot">
+  <img src="SampleSS/initialp.png" width="100%" alt="Project Screenshot">
+</p>
+
 ### [Click here to see the deployed pipeline on GCP (can take a little time to load.)](https://chatty-1062294228986.us-central1.run.app)
 
 ## Features

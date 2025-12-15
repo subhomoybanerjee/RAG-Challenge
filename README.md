@@ -1,0 +1,320 @@
+# RAG
+
+A Retrieval-Augmented Generation system built with Flask backend and React frontend 
+
+### [Click here to see the deployed pipeline on GCP (can take a little time to load.)](https://chatty-1062294228986.us-central1.run.app)
+
+## Features
+
+- Document Processing: Support for PDF and DOCX files with OCR capabilities for image-based documents if gpu setup during prod in GCP
+- Vector-based Retrieval: ChromaDB-powered semantic search with optional cross-encoder reranking and BM25.
+- Chat Interface: React-based UI with real-time conversation display
+- LLM Integration: Groq API integration.
+- Reranking Toggle: Enable or disable cross-encoder reranking for retrieval results dynamically
+- Vector Database Management: Clear all indexed documents from the vector store with a single action
+- Evaluation Framework: Included evaluation metrics for assessing RAG system performance
+- Persistent Storage: ChromaDB vector store with incremental updates
+- Incremental Ingestion: File filtering to avoid reprocessing existing documents
+
+## Table of Contents
+
+- Architecture
+- Prerequisites
+- Installation
+- Configuration
+- Usage
+- API Documentation
+- Evaluation
+- Project Structure
+- Troubleshooting
+
+## Architecture
+
+It follows a modular architecture with separation between the user interface, API layer, and core processing components.
+
+The React frontend communicates with the Flask backend via HTTP/JSON. The backend processes requests through the RAG Engine, which handles document extraction, embedding generation, vector storage, retrieval, and response generation. All vector data is stored in ChromaDB.
+
+### Components
+
+1. Data Extraction (Utils/DataExtraction.py): Extracts text from PDF and DOCX files using Docling with OCR fallback for image-based content (Only if gpu is setup, else it would take loads of time on the free tier.)
+2. Data Ingestion (Utils/DataIngestion.py): Processes documents, applies text chunking strategies, and prepares content for vector storage
+3. Embedding (Utils/Embedding.py): Generates semantic embeddings using sentence transformers for similarity search
+4. Vector Store (Utils/VectorStore.py): Manages ChromaDB operations including document indexing, querying, and deduplication
+5. Retrieval (Utils/Retrieval.py): Performs semantic search with initial vector retrieval followed by optional cross-encoder reranking
+6. Generation (Utils/Generation.py): Generates contextual responses using LLM with retrieved context and conversation history
+
+## Prerequisites
+
+### Backend Requirements
+- Python 3.13.2
+- pip package manager
+- Groq API key (available from Groq Console, bring your own api.)
+
+### Frontend Requirements
+- Node.js
+
+## Installation
+
+### 1. Backend Setup
+
+Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Frontend Setup
+
+Navigate to the frontend directory and install dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+
+## Configuration
+
+### Pipeline Configuration
+
+The RAG pipeline can be configured in main.py through the PipelineConfig class. The following parameters are available:
+
+- api_key: Groq API key
+- model_name: LLM model identifier, default is "llama-3.3-70b-versatile" (only use models from Groq)
+- temperature: LLM temperature parameter controlling response randomness, default is 0.1
+- chunk_size: Size of document chunks in characters, default is 1200
+- chunk_overlap: Overlap between chunks for context preservation, default is 250
+- splitter_strategy: Text splitting method, default is 'markdown'
+- collection_name: ChromaDB collection name, default is 'Reports_docling'
+- top_k: Number of document chunks to retrieve per query, default is 8
+- score_threshold: Minimum relevance score for retrieved chunks, default is 0.1
+- ocr_output_root: Directory path for debug, contains OCR/Text output files, default is "debug/ocr_images_docling"
+
+
+## Usage
+
+### Starting the Application
+
+#### Manual Start
+
+Start the Flask backend in one terminal:
+
+```bash
+python flask_app.py
+```
+
+Start the React frontend in another terminal:
+
+```bash
+cd frontend
+npm start
+```
+
+#### Windows Batch Scripts
+
+You can use the provided batch scripts on Windows:
+
+For the backend:
+```bash
+start_backend.bat
+```
+
+For the frontend:
+```bash
+start_frontend.bat
+```
+
+For running the evaluation suite:
+```bash
+run_evaluator.bat
+```
+
+### Accessing the Application
+
+The frontend interface is available at http://localhost:3000 in your web browser. The backend API runs on http://localhost:5000.
+
+### Basic Workflow
+
+1. Start both the Flask backend and React frontend services
+2. Open the application in your web browser
+3. Enter your Groq API key in the configuration sidebar
+4. Specify the folder path containing your documents (default path is datasets/files)
+5. Click "Ingest Documents" to process and index your files
+6. Once ingestion completes, the engine status will show "Engine Ready for RAG"
+7. Optionally enable reranking using the checkbox in the sidebar for improved retrieval accuracy
+8. Begin asking questions about your documents
+9. Use "Clear History" to reset conversation context
+10. Use "Clear Vector DB" to remove all indexed documents from the vector store
+
+### Document Preparation
+
+Place your documents in the datasets/files directory. The system supports PDF files (.pdf) and Word documents (.docx, .doc). Right now has the documents - attention is all you need, eu ai act.
+
+Example directory structure:
+
+```
+datasets/files/
+├── document1.pdf
+├── document2.docx
+└── document3.pdf
+```
+
+
+## API Documentation
+
+### Base URL
+
+```
+http://localhost:5000/api
+```
+
+### Endpoints
+
+#### Health Check
+
+GET /health
+
+Check if the API service is running and responsive.
+
+#### Get Engine Status
+
+GET /status
+
+Retrieve the current status of the RAG engine, including whether it is initialized and ready to process queries.
+
+#### Ingest Documents
+
+POST /ingest
+
+Process and index documents from a specified directory path. This endpoint extracts text, generates embeddings, and stores documents in the vector database.
+
+Error responses will include an error field with a descriptive message.
+
+#### Chat Query
+
+POST /chat
+
+Send a query to the RAG system and receive a response based on the indexed documents.
+
+Parameters:
+- query: Required. The question or query text
+- history: Optional. Array of conversation history messages with role and content fields
+- use_reranking: Optional. Boolean flag to enable cross-encoder reranking for retrieval results, default is false
+
+
+#### Clear Chat History
+
+POST /clear-history
+
+Clear the conversation history maintained by the engine instance.
+
+#### Clear Vector Database
+
+POST /clear-vector-db
+
+Remove all indexed documents from the ChromaDB vector store. This action permanently deletes all embeddings and metadata. The engine must be initialized before using this endpoint.
+
+After clearing the vector database, you will need to ingest documents again before querying.
+
+## Evaluation
+
+This includes an evaluation framework for assessing RAG system performance. This can help measure answer quality, retrieval accuracy, and overall system effectiveness.
+
+### Running Evaluation
+
+Navigate to the Eval directory and run the evaluation script:
+
+```bash
+cd Eval
+python eval.py
+```
+
+Alternatively, on Windows you can use the provided batch script:
+
+```bash
+run_evaluator.bat
+```
+
+The evaluation script supports enabling or disabling reranking. Edit the use_reranking variable in Eval/eval.py to control this behavior.
+
+### Evaluation Metrics
+
+The evaluation framework reports several metrics:
+
+- Correctness: Measures the accuracy of generated answers
+- Faithfulness: Evaluates whether answers are grounded in the retrieved context
+- Context Relevance: Assesses how relevant the retrieved context is to the query
+- Answer Relevance: Measures how relevant the answer is to the original question
+
+### Evaluation Data Format
+
+Prepare evaluation questions in Eval/datasets/evalQuestions.json using the following format:
+
+```json
+[
+  {
+    "question": "What is X?",
+    "ground_truth": "X is..."
+  }
+]
+```
+
+Each test case requires two fields:
+- question: The question to evaluate against the RAG system
+- ground_truth: The expected or ideal answer used for correctness evaluation
+
+The evaluation results are saved to evaluation_report.csv for further analysis.
+
+## Project Structure
+
+```
+Inference/
+├── flask_app.py              # Flask backend API server
+├── main.py                   # Core RAG engine and PipelineConfig class
+├── app_streamlit_OPTIONAL.py # Streamlit application (optional alternative, faster debug)
+│
+├── Utils/                    # Core utility modules
+│   ├── DataExtraction.py     # Document extraction processing
+│   ├── DataIngestion.py      # Document processing and text chunking
+│   ├── Embedding.py          # Embedding generation using sentence transformers
+│   ├── VectorStore.py        # ChromaDB vector store operations
+│   ├── Retrieval.py          # Semantic search and cross-encoder reranking
+│   ├── Generation.py         # LLM response generation with context
+│   └── Evaluation.py         # RAG evaluation framework and metrics
+│
+├── frontend/                 # React frontend application
+│   ├── public/
+│   │   └── index.html        # HTML template
+│   ├── src/
+│   │   ├── App.js            # Main application component
+│   │   ├── App.css           # Application styles
+│   │   ├── index.js          # React application entry point
+│   │   ├── components/
+│   │   │   ├── Sidebar.js    # Configuration sidebar component
+│   │   │   ├── ChatInterface.js  # Chat user interface component
+│   │   │   └── Message.js    # Individual message display component
+│   │   └── services/
+│   │       └── api.js        # API client service for backend communication
+│   └── package.json          # Node.js dependencies and scripts
+│
+├── datasets/                 # Data storage directories
+│   ├── files/                # Place documents for ingestion here
+│   └── vdb/                  # Vector database storage location
+│
+├── debug/                    # Debug and OCR output directories
+│   ├── ocr_images/           # OCR processed images and text output
+│   └── eval_ocr/             # Same as ocr_images, but contains debugs from the eval.py
+│
+├── Eval/                     # Evaluation framework
+│   ├── eval.py               # Main evaluation script
+│   ├── datasets/
+│   │   ├── evalQuestions.json  # Evaluation question datasets
+|   |   └── vdb/                # Vector database for evaluation
+│   └── evaluation_report.csv   # Generated evaluation results
+│
+├── requirements.txt          # Python package dependencies
+├── start_backend.bat         # Windows batch script to start backend
+├── start_frontend.bat        # Windows batch script to start frontend
+├── run_evaluator.bat         # Windows batch script to run evaluation
+└── README.md                 # This documentation file
+```

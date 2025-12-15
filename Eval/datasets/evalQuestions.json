@@ -1,0 +1,15 @@
+[
+  {
+    "question": "According to 'Attention Is All You Need', what is the main architectural innovation introduced compared to recurrent or convolutional sequence models?",
+    "ground_truth": "The paper introduces the Transformer architecture, a sequence transduction model based solely on attention mechanisms that dispenses with recurrence and convolutions entirely."
+  },
+  {
+    "question": "In 'Attention Is All You Need', how is scaled dot-product attention computed?",
+    "ground_truth": "Scaled dot-product attention is computed by taking the dot product of the query and key vectors, dividing by the square root of the key dimension, applying a softmax to obtain attention weights, and using these weights to form a weighted sum of the value vectors."
+  },
+  {
+    "question": "What is the purpose of multi-head attention in the Transformer described in 'Attention Is All You Need'?",
+    "ground_truth": "Multi-head attention allows the model to learn multiple different representations by applying attention in parallel with several heads, so it can jointly attend to information from different representation subspaces at different positions."
+  }
+  
+]

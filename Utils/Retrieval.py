@@ -1,5 +1,3 @@
-from sentence_transformers import CrossEncoder
-from typing import List, Dict, Any
 import numpy as np
 import string
 from rank_bm25 import BM25Okapi

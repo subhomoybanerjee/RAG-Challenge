@@ -1,9 +1,8 @@
 from sentence_transformers import SentenceTransformer
-from typing import List
 import numpy as np
 
 class EmbeddingManager:
-    def __init__(self,model_name:str='multi-qa-mpnet-base-dot-v1'):
+    def __init__(self,model_name='multi-qa-mpnet-base-dot-v1'):
         self.model_name=model_name
         self.model=None
         self._load_model()

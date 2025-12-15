@@ -7,8 +7,8 @@ import os
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# app = Flask(__name__)
-app = Flask(__name__, static_folder='build/static', template_folder='build')
+app = Flask(__name__)
+# app = Flask(__name__, static_folder='build/static', template_folder='build')
 CORS(app) 
 engine_instance = None
 

@@ -1,5 +1,4 @@
 import os
-from typing import List
 import chromadb
 from langchain_core.documents import Document
 import numpy as np

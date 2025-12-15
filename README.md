@@ -26,6 +26,7 @@ A Retrieval-Augmented Generation system built with Flask backend and React front
 
 - Architecture
 - Prerequisites
+- Groq API Key Setup
 - Installation
 - Configuration
 - Usage
@@ -59,6 +60,27 @@ The React frontend communicates with the Flask backend via HTTP/JSON. The backen
 
 ### Frontend Requirements
 - Node.js
+
+## Groq API Key Setup
+
+**Important**: This application requires a Groq API key to function. You must create your own API key through the Groq Console.
+
+### Steps to Obtain Your Groq API Key
+
+1. **Visit the Groq Console**
+   - Go to [https://console.groq.com](https://console.groq.com)
+   - Sign up for a free account if you don't have one, or log in to your existing account
+
+2. **Create an API Key**
+   - Navigate to the API Keys section in the Groq Console
+   - Click on "Create API Key" or "Generate New Key"
+   - Give your API a name.
+   - Copy the generated API key immediately, it will only be shown once
+   - You will need to enter this API key in the apps configuration sidebar when using the frontend interface
+   - You can also set it in `main.py` through the `PipelineConfig` class
+
+### Note:
+- **Evaluation Script**: Configure the API key in `Eval/eval.py` for running evaluations
 
 ## Installation
 

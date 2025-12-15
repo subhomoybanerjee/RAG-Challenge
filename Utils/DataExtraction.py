@@ -1,3 +1,121 @@
+from pathlib import Path
+import fitz  
+from langchain_core.documents import Document
+from docling.document_converter import DocumentConverter
+
+
+# docling only for word, no ocr
+class Extractor:
+    def __init__(self,lang,llm= None,text_output_root = None,translate= True,max_retries = 3):
+        self.lang = lang
+        self.llm = llm
+        self.text_output_root = Path(text_output_root) if text_output_root else None
+        self.translate = translate
+        self.max_retries = max_retries
+        print("initializing docling converter")
+        self.converter = DocumentConverter()
+        
+    def process_pdf(self, pdf_path):
+        pdf_path = Path(pdf_path)
+        doc_fitz = fitz.open(str(pdf_path))
+        pdf_name = pdf_path.stem
+        file_docs = []
+
+        save_dir = self.text_output_root / pdf_name if self.text_output_root else None
+        if save_dir: 
+            save_dir.mkdir(parents=True, exist_ok=True)
+            print(f"saving debug files to: {save_dir}")
+
+        print(f"processing {pdf_name} ({len(doc_fitz)} pages)...")
+
+        for i, page in enumerate(doc_fitz):
+            page_num = i + 1
+            fitz_page = doc_fitz[i]
+            
+            raw_native = fitz_page.get_text() or ""
+            translated_native = ""
+
+            if raw_native.strip():
+                print(f"page {page_num}] translating native text ({len(raw_native)} chars)...")
+                translated_native = raw_native
+            
+            final_content_parts = []
+            if translated_native:final_content_parts.append(translated_native)
+            final_text = "\n\n".join(final_content_parts)
+
+            if save_dir:
+                (save_dir / f"page_{page_num:03d}_final.md").write_text(final_text, encoding="utf-8")
+
+            if final_text.strip():
+                meta = {"source": pdf_path.name, "page": page_num}
+                file_docs.append(Document(page_content=final_text, metadata=meta))
+
+        doc_fitz.close()
+        return file_docs
+
+    def process_docx(self, doc_path):
+        
+        doc_path = Path(doc_path)
+        doc_name = doc_path.stem
+        file_docs = []
+
+        save_dir = self.text_output_root / doc_name if self.text_output_root else None
+        if save_dir:
+            save_dir.mkdir(parents=True, exist_ok=True)
+            print(f"saving debug files to: {save_dir}")
+
+        print(f"processing Word document {doc_name}...")
+
+        try:
+            result = self.converter.convert(str(doc_path))
+            dl_doc = result.document
+            md = dl_doc.export_to_markdown()
+
+            if save_dir:
+                (save_dir / f"{doc_name}_docling.md").write_text(md, encoding="utf-8")
+
+            if md.strip():
+                meta = {
+                    "source": doc_path.name,
+                    "file_type": "docx" if doc_path.suffix.lower() == ".docx" else "doc",
+                }
+                file_docs.append(Document(page_content=md, metadata=meta))
+            print('done\n')
+
+        except Exception as e:
+            print(f"docling failed on {doc_path.name}: {e}")
+
+        return file_docs
+
+    def process_file(self, path):
+        
+        path = Path(path)
+        ext = path.suffix.lower()
+
+        if ext == ".pdf":
+            return self.process_pdf(path)
+        elif ext in (".docx", ".doc"):
+            return self.process_docx(path)
+        else:
+            raise ValueError(f"nope, use .pdf or .docx or .doc files only: {ext} ({path})")
+
+    def process_directory(self, path):
+        print(path)
+        path = Path(path)
+        docs = []
+
+        if path.is_file():
+            return self.process_file(path)
+
+        if path.is_dir():
+            for f in path.glob("**/*"):
+                if f.suffix.lower() in (".pdf", ".docx", ".doc"):
+                    try:
+                        docs.extend(self.process_file(f))
+                    except Exception as e:
+                        print(f"Error {f.name}: {e}")
+        return docs
+
 # import io
 # import time
 # from pathlib import Path
@@ -259,121 +377,3 @@
 #                     except Exception as e:
 #                         print(f"Error {f.name}: {e}")
 #         return docs
-
-from pathlib import Path
-import fitz  
-from langchain_core.documents import Document
-from docling.document_converter import DocumentConverter
-
-
-# docling only for word, no ocr
-class Extractor:
-    def __init__(self,lang,llm= None,text_output_root = None,translate= True,max_retries = 3):
-        self.lang = lang
-        self.llm = llm
-        self.text_output_root = Path(text_output_root) if text_output_root else None
-        self.translate = translate
-        self.max_retries = max_retries
-        print("initializing docling converter")
-        self.converter = DocumentConverter()
-        
-    def process_pdf(self, pdf_path):
-        pdf_path = Path(pdf_path)
-        doc_fitz = fitz.open(str(pdf_path))
-        pdf_name = pdf_path.stem
-        file_docs = []
-
-        save_dir = self.text_output_root / pdf_name if self.text_output_root else None
-        if save_dir: 
-            save_dir.mkdir(parents=True, exist_ok=True)
-            print(f"saving debug files to: {save_dir}")
-
-        print(f"processing {pdf_name} ({len(doc_fitz)} pages)...")
-
-        for i, page in enumerate(doc_fitz):
-            page_num = i + 1
-            fitz_page = doc_fitz[i]
-            
-            raw_native = fitz_page.get_text() or ""
-            translated_native = ""
-
-            if raw_native.strip():
-                print(f"page {page_num}] translating native text ({len(raw_native)} chars)...")
-                translated_native = raw_native
-            
-            final_content_parts = []
-            if translated_native:final_content_parts.append(translated_native)
-            final_text = "\n\n".join(final_content_parts)
-
-            if save_dir:
-                (save_dir / f"page_{page_num:03d}_final.md").write_text(final_text, encoding="utf-8")
-
-            if final_text.strip():
-                meta = {"source": pdf_path.name, "page": page_num}
-                file_docs.append(Document(page_content=final_text, metadata=meta))
-
-        doc_fitz.close()
-        return file_docs
-
-    def process_docx(self, doc_path):
-        
-        doc_path = Path(doc_path)
-        doc_name = doc_path.stem
-        file_docs = []
-
-        save_dir = self.text_output_root / doc_name if self.text_output_root else None
-        if save_dir:
-            save_dir.mkdir(parents=True, exist_ok=True)
-            print(f"saving debug files to: {save_dir}")
-
-        print(f"processing Word document {doc_name}...")
-
-        try:
-            result = self.converter.convert(str(doc_path))
-            dl_doc = result.document
-            md = dl_doc.export_to_markdown()
-
-            if save_dir:
-                (save_dir / f"{doc_name}_docling.md").write_text(md, encoding="utf-8")
-
-            if md.strip():
-                meta = {
-                    "source": doc_path.name,
-                    "file_type": "docx" if doc_path.suffix.lower() == ".docx" else "doc",
-                }
-                file_docs.append(Document(page_content=md, metadata=meta))
-            print('done\n')
-
-        except Exception as e:
-            print(f"docling failed on {doc_path.name}: {e}")
-
-        return file_docs
-
-    def process_file(self, path):
-        
-        path = Path(path)
-        ext = path.suffix.lower()
-
-        if ext == ".pdf":
-            return self.process_pdf(path)
-        elif ext in (".docx", ".doc"):
-            return self.process_docx(path)
-        else:
-            raise ValueError(f"nope, use .pdf or .docx or .doc files only: {ext} ({path})")
-
-    def process_directory(self, path):
-        print(path)
-        path = Path(path)
-        docs = []
-
-        if path.is_file():
-            return self.process_file(path)
-
-        if path.is_dir():
-            for f in path.glob("**/*"):
-                if f.suffix.lower() in (".pdf", ".docx", ".doc"):
-                    try:
-                        docs.extend(self.process_file(f))
-                    except Exception as e:
-                        print(f"Error {f.name}: {e}")
-        return docs

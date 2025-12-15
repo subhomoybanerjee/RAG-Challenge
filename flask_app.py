@@ -116,10 +116,8 @@ def clear_vector_db():
         if engine_instance is None:
             return jsonify({"error": "engine not initialized"}), 400
         
-        # Clear the vector store collection
         engine_instance.vectorstore.clear_collection()
         
-        # Refresh the retriever after clearing
         engine_instance.refresh_retriever()
         
         return jsonify({

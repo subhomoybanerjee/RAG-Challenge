@@ -16,7 +16,7 @@ def load_test_cases(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:return json.load(f)
 
 def main():
-    Apeeai='' # add your own api key here from groq
+    Apeeai='' # ill add my own api key here from groq
     model_name='llama-3.1-8b-instant'
     # model_name='llama-3.3-70b-versatile'
     api_key = os.getenv("API_KEY", Apeeai)

@@ -284,6 +284,42 @@ All scores are integers ranging from 0 to 10.
 
 This section outlines key architectural choices and the trade-offs considered during system design.
 
+### Text Preprocessing Pipeline
+
+**Decision**: Minimal text cleaning during extraction, markdown-aware chunking, and normalization only for BM25 indexing.
+
+**Preprocessing Steps**:
+
+1. **Document Extraction**:
+   - PDF files: Direct text extraction using PyMuPDF (fitz) with no additional cleaning
+   - DOCX files: Conversion to markdown format using Docling, preserving document structure
+   - Text is extracted as-is and saved to markdown files for debugging purposes
+
+2. **Text Chunking**:
+   - Uses RecursiveCharacterTextSplitter from LangChain with configurable strategy
+   - **Markdown-aware splitting** (default): Respects markdown structure, splits on markdown syntax boundaries (headers, lists, paragraphs)
+   - **Generic splitting**: Uses hierarchical separators `["\n\n", "\n", " ", ""]` to split while preserving sentence boundaries (NOT used for this app, but can switch to it, for experimenting.)
+   - Default chunk size: 1200 characters with 250 character overlap
+
+3. **Text Normalization (BM25 Only)**:
+   - Applied only to text used for BM25 lexical search indexing
+   - **Lowercasing**: All text converted to lowercase for case-insensitive matching
+   - **Punctuation removal**: All punctuation characters replaced with spaces
+   - **Whitespace tokenization**: Text split on whitespace to create tokens
+   - Note: Vector embeddings use original text without normalization to preserve semantic meaning
+
+4. **Metadata Processing**:
+   - Content length tracking for each chunk
+   - Chunk size and overlap metadata stored with documents
+   - Granularity classification: "fine" (≤120 chars) or "coarse" (>120 chars)
+   - Source file name and page number tracking for citation
+
+**Trade-offs**:
+- **Advantages**: Preserves original text quality for semantic embeddings, markdown splitting maintains document structure, minimal preprocessing reduces information loss, BM25 normalization improves keyword matching
+- **Disadvantages**: No spell checking or typo correction, no stop word removal (may add noise to BM25), no stemming or lemmatization (different word forms treated separately), original text storage requires more disk space
+
+**Rationale**: The preprocessing strategy prioritizes information preservation over aggressive cleaning. Vector embeddings benefit from original text quality, while BM25 benefits from simple normalization.
+
 ### Flask Backend with React Frontend
 
 **Decision**: Separate Flask backend API with React frontend instead of a single Streamlit application.
@@ -344,6 +380,8 @@ This section outlines key architectural choices and the trade-offs considered du
 - **Disadvantages**: May have biases from using the same model after all its using ai to judge ai, subjective scoring may vary, requires LLM API calls for each evaluation which adds evaluation time and cost
 
 **Rationale**: Manual evaluation is not scalable for large test suites.
+
+
 
 ```
 Inference/

@@ -262,7 +262,7 @@ Prepare evaluation questions in Eval/datasets/evalQuestions.json using the follo
 
 Each test case requires two fields:
 - question: The question to evaluate against the RAG system
-- ground_truth: The expected or ideal answer used for correctness evaluation
+- ground_truth: Ideal answer used for correctness evaluation
 
 The evaluation results are saved to evaluation_report.csv for further analysis.
 
